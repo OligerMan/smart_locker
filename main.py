@@ -6,6 +6,9 @@ from mediapipe.framework.formats import landmark_pb2
 
 import cv2
 import numpy as np
+from pynput.keyboard import Key, Controller
+import time
+kb = Controller()
 
 gesture_model_path = 'models/gesture_recognizer.task'
 pose_model_path = 'models/pose_landmarker.task'
@@ -19,8 +22,6 @@ pose_options = vision.PoseLandmarkerOptions(
     base_options=pose_base_options,
     output_segmentation_masks=True)
 pose_recognizer = vision.PoseLandmarker.create_from_options(pose_options)
-
-import cv2
 
 
 def list_ports():
@@ -78,6 +79,7 @@ if not cap.isOpened():
 
 cnt = 0
 pose_freq = 5
+last_trigger = time.time()
 
 ret, frame = cap.read()
 frame = cv2.flip(frame, 1)
@@ -86,11 +88,11 @@ img = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
 recognition_result = gesture_recognizer.recognize(img)
 detection_result = pose_recognizer.detect(img)
 
-hand_info = {
-    "left": {},
-    "right": {}
-}
 while True:
+    hand_data = {
+        "Left": {},
+        "Right": {}
+    }
     ret, frame = cap.read()
     frame = cv2.flip(frame, 1)
     frame = frame[..., ::-1].copy()
@@ -98,6 +100,21 @@ while True:
     recognition_result = gesture_recognizer.recognize(img)
     if cnt % pose_freq == 0:
         detection_result = pose_recognizer.detect(img)
+    for gesture, hand_info in zip(recognition_result.gestures, recognition_result.handedness):
+        gesture_info = set([gesture[0].category_name])
+        hand_data[hand_info[0].category_name] = gesture_info
+    if "Thumb_Up" in hand_data["Left"] or "Thumb_Up" in hand_data["Right"]:
+        if time.time() - last_trigger > 1.5:
+            kb.press(Key.right)
+            kb.release(Key.right)
+            last_trigger = time.time()
+            print("right")
+    if "Thumb_Down" in hand_data["Left"] or "Thumb_Down" in hand_data["Right"]:
+        if time.time() - last_trigger > 1.5:
+            kb.press(Key.left)
+            kb.release(Key.left)
+            last_trigger = time.time()
+            print("left")
 
     annotated_image = draw_landmarks_on_image(img.numpy_view(), detection_result)
     annotated_image = annotated_image[..., ::-1].copy()
