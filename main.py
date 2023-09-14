@@ -6,9 +6,19 @@ from mediapipe.framework.formats import landmark_pb2
 
 import cv2
 import numpy as np
-from pynput.keyboard import Key, Controller
 import time
+import serial
+from enum import Enum
+arduino = serial.Serial(port='COM3', baudrate=9600, timeout=.1)
+
+from pynput.keyboard import Controller, Key
+
 kb = Controller()
+
+class command(Enum):
+    NO_DATA = -1
+    LEFT = 0
+    RIGHT = 1
 
 gesture_model_path = 'models/gesture_recognizer.task'
 pose_model_path = 'models/pose_landmarker.task'
@@ -22,34 +32,6 @@ pose_options = vision.PoseLandmarkerOptions(
     base_options=pose_base_options,
     output_segmentation_masks=True)
 pose_recognizer = vision.PoseLandmarker.create_from_options(pose_options)
-
-
-def list_ports():
-    """
-    Test the ports and returns a tuple with the available ports
-    and the ones that are working.
-    """
-    is_working = True
-    dev_port = 0
-    working_ports = []
-    available_ports = []
-    while is_working:
-        camera = cv2.VideoCapture(dev_port)
-        if not camera.isOpened():
-            is_working = False
-            print("Port %s is not working." %dev_port)
-        else:
-            is_reading, img = camera.read()
-            w = camera.get(3)
-            h = camera.get(4)
-            if is_reading:
-                print("Port %s is working and reads images (%s x %s)" %(dev_port,h,w))
-                working_ports.append(dev_port)
-            else:
-                print("Port %s for camera ( %s x %s) is present but does not reads." %(dev_port,h,w))
-                available_ports.append(dev_port)
-        dev_port +=1
-    return available_ports,working_ports
 
 
 def draw_landmarks_on_image(rgb_image, detection_result):
@@ -109,12 +91,14 @@ while True:
             kb.release(Key.right)
             last_trigger = time.time()
             print("right")
+            arduino.write(command.RIGHT.value.to_bytes(1, byteorder='big', signed=True))
     if "Thumb_Down" in hand_data["Left"] or "Thumb_Down" in hand_data["Right"]:
         if time.time() - last_trigger > 1.5:
             kb.press(Key.left)
             kb.release(Key.left)
             last_trigger = time.time()
             print("left")
+            arduino.write(command.LEFT.value.to_bytes(1, byteorder='big', signed=True))
 
     annotated_image = draw_landmarks_on_image(img.numpy_view(), detection_result)
     annotated_image = annotated_image[..., ::-1].copy()
@@ -122,6 +106,9 @@ while True:
     #segmentation_mask = detection_result.segmentation_masks[0].numpy_view()
     #visualized_mask = np.repeat(segmentation_mask[:, :, np.newaxis], 3, axis=2) * 255
     #cv2.imshow('mask', visualized_mask)
+    data = arduino.readline()
+    print("Data from arduino:", data)
+
     if cv2.waitKey(1) == ord('q'):
         break
 
