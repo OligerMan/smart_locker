@@ -46,7 +46,6 @@ def draw_landmarks_on_image(rgb_image, detection_result):
     pose_landmarks_proto.landmark.extend([
       landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks
     ])
-    print(pose_landmarks_proto)
     solutions.drawing_utils.draw_landmarks(
       annotated_image,
       pose_landmarks_proto,
@@ -61,7 +60,7 @@ if not cap.isOpened():
     exit()
 
 cnt = 0
-pose_freq = 50000
+pose_freq = 1
 last_trigger = time.time()
 
 ret, frame = cap.read()
@@ -75,10 +74,10 @@ def stub(*args, **kwargs):
     pass
 
 gesture_mapping = {
-    ("Left", "Thumb_Up"): lambda arduino: arduino.send_command(Command.LEFT_UP),
-    ("Right", "Thumb_Up"): lambda arduino: arduino.send_command(Command.RIGHT_UP),
-    ("Left", "Thumb_Down"): lambda arduino: arduino.send_command(Command.LEFT_DOWN),
-    ("Right", "Thumb_Down"): lambda arduino: arduino.send_command(Command.RIGHT_DOWN)
+    ("Left", "Thumb_Up"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
+    ("Right", "Thumb_Up"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
+    ("Left", "Thumb_Down"): lambda arduino: arduino.send_command(Command.CLOSE_CELL),
+    ("Right", "Thumb_Down"): lambda arduino: arduino.send_command(Command.CLOSE_CELL)
 }
 
 
@@ -129,18 +128,29 @@ while True:
             gesture_mapping.get(("Left", data), stub)(arduino)
             last_trigger = time.time()
     if len(detection_result.pose_landmarks):
-        elbow = detection_result.pose_landmarks[0][13]
-        wrist = detection_result.pose_landmarks[0][15]
-        elbow_fix = landmark_pb2.NormalizedLandmark(x=elbow.x, y=elbow.y, z=elbow.z)
-        wrist_fix = landmark_pb2.NormalizedLandmark(x=wrist.x, y=wrist.y, z=wrist.z)
-        print("------")
-        elbow_pixel = _normalized_to_pixel_coordinates(elbow_fix.x, elbow_fix.y, 640, 480)
-        elbow_pixel = _normalized_to_pixel_coordinates(elbow_fix.x, elbow_fix.y, 640, 480)
+        elbow = detection_result.pose_landmarks[0][14]
+        wrist = detection_result.pose_landmarks[0][16]
+        diff_x = math.atan((elbow.x - wrist.x) * 1000)
+        diff_y = math.atan((elbow.y - wrist.y) * 1000)
+        #print(elbow.presence, wrist.presence)
+        if elbow.presence > 0.75 and wrist.presence > 0.75:
+            if diff_x < 0 and diff_y > 0:
+                arduino.send_command(Command.SELECT_RIGHT_UP)
+                print("right_up")
+            if diff_x < 0 and diff_y < 0:
+                arduino.send_command(Command.SELECT_RIGHT_DOWN)
+                print("right_down")
+            if diff_x > 0 and diff_y > 0:
+                arduino.send_command(Command.SELECT_LEFT_UP)
+                print("left_up")
+            if diff_x > 0 and diff_y < 0:
+                arduino.send_command(Command.SELECT_LEFT_DOWN)
+                print("left_down")
     #print(time.time() - start_point)
     annotated_image = draw_landmarks_on_image(img.numpy_view(), detection_result)
     annotated_image = annotated_image[..., ::-1].copy()
     cv2.imshow('frame', annotated_image)
-    print(arduino.get_data())
+    #print(arduino.get_data())
     if cv2.waitKey(1) == ord('q'):
         break
 

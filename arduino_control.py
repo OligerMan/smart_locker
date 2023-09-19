@@ -4,10 +4,18 @@ from enum import Enum
 
 class Command(Enum):
     NO_DATA = -1
+    # working mode 1 - direct commands to 2 lockers
     LEFT_UP = 0
     LEFT_DOWN = 1
     RIGHT_UP = 2
     RIGHT_DOWN = 3
+    # working mode 2 - switching between 4 lockers and open/close
+    SELECT_LEFT_UP = 4
+    SELECT_LEFT_DOWN = 5
+    SELECT_RIGHT_UP = 6
+    SELECT_RIGHT_DOWN = 7
+    OPEN_CELL = 8
+    CLOSE_CELL = 9
 
 
 class Arduino:
