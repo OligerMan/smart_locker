@@ -28,7 +28,7 @@ struct Cell {
   int led_port;
   int led_port_type; // 0 for analog, 1 for digital
   Servo servo_driver;
-}
+};
 
 #define CELLS_COUNT
 struct Cell cells[CELLS_COUNT];
