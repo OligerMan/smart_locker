@@ -30,7 +30,7 @@ struct Cell {
   Servo servo_driver;
 };
 
-#define CELLS_COUNT
+#define CELLS_COUNT 4
 struct Cell cells[CELLS_COUNT];
 
 // NEW INIT END
