@@ -57,10 +57,10 @@ void setup() {
   servo_left.write(left_limit_up);
   servo_right.write(right_limit_down);
 
-  cells[0].lock_direction = 0;
+  cells[0].lock_direction = 1;
   cells[1].lock_direction = 1;
   cells[2].lock_direction = 0;
-  cells[3].lock_direction = 1;
+  cells[3].lock_direction = 0;
 
   cells[0].limit_down = 60;
   cells[0].limit_up = 120;
@@ -88,6 +88,7 @@ void setup() {
   
   for (int i = 0; i < CELLS_COUNT; i++) {
     cells[i].state = 0;
+    pinMode(cells[i].led_port, OUTPUT);
     cells[i].servo_driver.attach(cells[i].servo_port);
     if (cells[i].lock_direction == 0) {
       cells[i].current_angle = cells[i].limit_down;

@@ -74,10 +74,10 @@ def stub(*args, **kwargs):
     pass
 
 gesture_mapping = {
-    ("Left", "Thumb_Up"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
-    ("Right", "Thumb_Up"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
-    ("Left", "Thumb_Down"): lambda arduino: arduino.send_command(Command.CLOSE_CELL),
-    ("Right", "Thumb_Down"): lambda arduino: arduino.send_command(Command.CLOSE_CELL)
+    ("Left", "Victory"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
+    ("Right", "Victory"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
+    ("Left", "Pointing_Up"): lambda arduino: arduino.send_command(Command.CLOSE_CELL),
+    ("Right", "Pointing_Up"): lambda arduino: arduino.send_command(Command.CLOSE_CELL)
 }
 
 
@@ -136,16 +136,16 @@ while True:
         if elbow.presence > 0.75 and wrist.presence > 0.75:
             if diff_x < 0 and diff_y > 0:
                 arduino.send_command(Command.SELECT_RIGHT_UP)
-                print("right_up")
+                #print("right_up")
             if diff_x < 0 and diff_y < 0:
                 arduino.send_command(Command.SELECT_RIGHT_DOWN)
-                print("right_down")
+                #print("right_down")
             if diff_x > 0 and diff_y > 0:
                 arduino.send_command(Command.SELECT_LEFT_UP)
-                print("left_up")
+                #print("left_up")
             if diff_x > 0 and diff_y < 0:
                 arduino.send_command(Command.SELECT_LEFT_DOWN)
-                print("left_down")
+                #print("left_down")
     #print(time.time() - start_point)
     annotated_image = draw_landmarks_on_image(img.numpy_view(), detection_result)
     annotated_image = annotated_image[..., ::-1].copy()
