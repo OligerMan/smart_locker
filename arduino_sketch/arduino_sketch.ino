@@ -1,20 +1,6 @@
 #include <Servo.h>
 
-// OLD INIT
-Servo servo_left;
-Servo servo_right;
-
-int left_limit_down = 0;
-int left_limit_up = 60;
-int right_limit_down = 60;
-int right_limit_up = 120;
-
-int left_current_angle = left_limit_down;
-int right_current_angle = right_limit_up;
 int angle_change = 180;
-
-// OLD INIT END
-
 
 // NEW INIT
 
@@ -30,7 +16,7 @@ struct Cell {
   Servo servo_driver;
 };
 
-#define CELLS_COUNT 4
+#define CELLS_COUNT 5
 struct Cell cells[CELLS_COUNT];
 
 // NEW INIT END
@@ -51,11 +37,6 @@ enum command {
 
 void setup() {
   Serial.begin(9600);
-  pinMode(LED_BUILTIN, OUTPUT);
-  servo_left.attach(9);
-  servo_right.attach(10);
-  servo_left.write(left_limit_up);
-  servo_right.write(right_limit_down);
 
   cells[0].lock_direction = 1;
   cells[1].lock_direction = 1;
@@ -71,20 +52,20 @@ void setup() {
   cells[3].limit_down = 60;
   cells[3].limit_up = 120;
 
-  cells[0].led_port = 2;
-  cells[1].led_port = 3;
+  cells[0].led_port = 3;
+  cells[1].led_port = 2;
   cells[2].led_port = 4;
-  cells[3].led_port = 5;
+  cells[3].led_port = 10;
  
   cells[0].led_port_type = 1;
   cells[1].led_port_type = 1;
   cells[2].led_port_type = 1;
   cells[3].led_port_type = 1;
   
-  cells[0].servo_port = 5;
+  cells[0].servo_port = 11;
   cells[1].servo_port = 6;
   cells[2].servo_port = 7;
-  cells[3].servo_port = 8;
+  cells[3].servo_port = 9;
   
   for (int i = 0; i < CELLS_COUNT; i++) {
     cells[i].state = 0;

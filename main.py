@@ -22,6 +22,7 @@ kb = Controller()
 
 gesture_model_path = 'models/gesture_recognizer.task'
 pose_model_path = 'models/pose_landmarker.task'
+#face_model_path = '/absolute/path/to/face_detector.task'
 
 gesture_base_options = python.BaseOptions(model_asset_path=gesture_model_path)
 gesture_options = vision.GestureRecognizerOptions(base_options=gesture_base_options)
@@ -32,6 +33,10 @@ pose_options = vision.PoseLandmarkerOptions(
     base_options=pose_base_options,
     output_segmentation_masks=False)
 pose_recognizer = vision.PoseLandmarker.create_from_options(pose_options)
+
+"""face_base_options = python.BaseOptions(model_asset_path='/path/to/model.task')
+face_options = vision.FaceDetectorOptions(base_options=face_base_options)
+face_recognizer = vision.FaceDetector.create_from_options(face_options)"""
 
 def draw_landmarks_on_image(rgb_image, detection_result):
   pose_landmarks_list = detection_result.pose_landmarks
@@ -74,10 +79,10 @@ def stub(*args, **kwargs):
     pass
 
 gesture_mapping = {
-    ("Left", "Victory"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
-    ("Right", "Victory"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
-    ("Left", "Pointing_Up"): lambda arduino: arduino.send_command(Command.CLOSE_CELL),
-    ("Right", "Pointing_Up"): lambda arduino: arduino.send_command(Command.CLOSE_CELL)
+    ("Left", "Open_Palm"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
+    ("Right", "Open_Palm"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
+    ("Left", "Closed_Fist"): lambda arduino: arduino.send_command(Command.CLOSE_CELL),
+    ("Right", "Closed_Fist"): lambda arduino: arduino.send_command(Command.CLOSE_CELL)
 }
 
 
