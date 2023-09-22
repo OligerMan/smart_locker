@@ -23,9 +23,6 @@ from mediapipe.tasks.python.vision import RunningMode
 from arduino_control import Command, Arduino
 from pynput.keyboard import Controller, Key
 import face_recognition
-from facenet_pytorch import MTCNN
-import torch
-
 
 face_encodings = []
 face_encodings_tags = []
@@ -57,13 +54,6 @@ if __name__ == '__main__':
     ctx = multiprocessing.get_context('spawn')
     p = ctx.Process(target=faces_detection, args=(img_queue, res_queue))
     p.start()
-
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    print('Running on device: {}'.format(device))
-    mtcnn = MTCNN(margin=14,
-                  factor=0.6,
-                  keep_all=True,
-                  device=device)
 
     kb = Controller()
 
