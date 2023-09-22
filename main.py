@@ -1,5 +1,7 @@
 import math
 import os
+import shlex
+import subprocess
 
 import mediapipe as mp
 from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates
@@ -202,9 +204,10 @@ if __name__ == '__main__':
                     print(tag, "out of frame")
                 for tag in list(current_detection.difference(prev_detection)):
                     print(tag, "now in frame")
-                    command = "vlc voices\\" + tag + ".mp3"
-                    print(command)
-                    os.system(command)
+                    command = "vlc voices/" + tag + ".mp3"
+                    proc = subprocess.Popen(
+                        shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
+                    )
         except Exception:
             pass
 
