@@ -108,7 +108,7 @@ if __name__ == '__main__':
         return annotated_image
 
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
@@ -143,6 +143,7 @@ if __name__ == '__main__':
         arduino = Arduino()
         print("failed arduino start")
 
+    prev_detection = {}
 
     while True:
         cnt += 1
@@ -174,11 +175,14 @@ if __name__ == '__main__':
             hand_data[hand_info[0].category_name] = gesture_info
         if img_queue.empty():
             img_queue.put(frame)
+
+        #current_detection = {}
         try:
             data = res_queue.get_nowait()
             for i, tag in enumerate(face_encodings_tags):
                 if data[i]:
                     print(tag, "detected, frame", cnt)
+                    #current_detection.update(tag)
         except Exception:
             pass
         if time.time() - last_trigger > gesture_trigger_delay:
