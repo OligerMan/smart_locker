@@ -1,4 +1,5 @@
 import math
+import os
 
 import mediapipe as mp
 from mediapipe.python.solutions.drawing_utils import _normalized_to_pixel_coordinates
@@ -39,7 +40,7 @@ def faces_detection(img_queue, res_queue):
         img = img_queue.get()
         while not img_queue.empty():
             img = img_queue.get()
-        print("got new image")
+        #print("got new image")
         out = [False for _ in face_encodings]
         for face_encoding in face_recognition.face_encodings(img):
             detection = face_recognition.compare_faces(face_encodings, face_encoding, tolerance=0.4)
@@ -108,7 +109,7 @@ if __name__ == '__main__':
         return annotated_image
 
 
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         print("Cannot open camera")
         exit()
@@ -143,7 +144,8 @@ if __name__ == '__main__':
         arduino = Arduino()
         print("failed arduino start")
 
-    prev_detection = {}
+    face_detection_window_size = 5
+    prev_detection_window = [set() for i in range(face_detection_window_size)]
 
     while True:
         cnt += 1
@@ -176,15 +178,36 @@ if __name__ == '__main__':
         if img_queue.empty():
             img_queue.put(frame)
 
-        #current_detection = {}
         try:
             data = res_queue.get_nowait()
+            prev_detection = set()
+            print(prev_detection_window)
+            for detection in prev_detection_window:
+                prev_detection = prev_detection.union(detection)
+            prev_detection_window = [tag_set for i, tag_set in enumerate(prev_detection) if i != 0]
+            current_detection = set()
+
             for i, tag in enumerate(face_encodings_tags):
                 if data[i]:
                     print(tag, "detected, frame", cnt)
-                    #current_detection.update(tag)
+                    current_detection.update([tag])
+
+            prev_detection_window.append(current_detection)
+            current_detection = set()
+            for detection in prev_detection_window:
+                current_detection = current_detection.union(detection)
+            if prev_detection != current_detection:
+                # print(prev_detection, current_detection)
+                for tag in list(prev_detection.difference(current_detection)):
+                    print(tag, "out of frame")
+                for tag in list(current_detection.difference(prev_detection)):
+                    print(tag, "now in frame")
+                    command = "vlc voices\\" + tag + ".mp3"
+                    print(command)
+                    os.system(command)
         except Exception:
             pass
+
         if time.time() - last_trigger > gesture_trigger_delay:
             for data in hand_data["Right"]:
                 print(data)
