@@ -11,8 +11,12 @@ struct Cell {
   int lock_direction; // 0 or 1, referred is right and left turn
   int state; // closed = 0, opened = 1
   int servo_port;
-  int led_port;
-  int led_port_type; // 0 for analog, 1 for digital
+  int green_led_port;
+  int green_led_port_type; // 0 for analog, 1 for digital
+  int yellow_led_port;
+  int yellow_led_port_type; // 0 for analog, 1 for digital
+  int red_led_port;
+  int red_led_port_type; // 0 for analog, 1 for digital
   Servo servo_driver;
 };
 
@@ -32,7 +36,9 @@ enum command {
   SELECT_RIGHT_UP,
   SELECT_RIGHT_DOWN,
   OPEN_CELL,
-  CLOSE_CELL
+  CLOSE_CELL,
+  OPEN_CELL_NO_PERMISSION,
+  CLOSE_CELL_NO_PERMISSION
 };
 
 void setup() {
@@ -52,15 +58,31 @@ void setup() {
   cells[3].limit_down = 60;
   cells[3].limit_up = 120;
 
-  cells[0].led_port = 3;
-  cells[1].led_port = 2;
-  cells[2].led_port = 4;
-  cells[3].led_port = 10;
+  cells[0].green_led_port = 3;
+  cells[1].green_led_port = 2;
+  cells[2].green_led_port = 4;
+  cells[3].green_led_port = 10;
+  cells[0].yellow_led_port = A7;
+  cells[1].yellow_led_port = 12;
+  cells[2].yellow_led_port = A1;
+  cells[3].yellow_led_port = A2;
+  cells[0].red_led_port = A3;
+  cells[1].red_led_port = A4;
+  cells[2].red_led_port = A5;
+  cells[3].red_led_port = A6;
  
-  cells[0].led_port_type = 1;
-  cells[1].led_port_type = 1;
-  cells[2].led_port_type = 1;
-  cells[3].led_port_type = 1;
+  cells[0].green_led_port_type = 1;
+  cells[1].green_led_port_type = 1;
+  cells[2].green_led_port_type = 1;
+  cells[3].green_led_port_type = 1;
+  cells[0].yellow_led_port_type = 0;
+  cells[1].yellow_led_port_type = 1;
+  cells[2].yellow_led_port_type = 0;
+  cells[3].yellow_led_port_type = 0;
+  cells[0].red_led_port_type = 0;
+  cells[1].red_led_port_type = 0;
+  cells[2].red_led_port_type = 0;
+    cells[3].red_led_port_type = 0;
   
   cells[0].servo_port = 11;
   cells[1].servo_port = 6;
@@ -69,7 +91,9 @@ void setup() {
   
   for (int i = 0; i < CELLS_COUNT; i++) {
     cells[i].state = 0;
-    pinMode(cells[i].led_port, OUTPUT);
+    pinMode(cells[i].green_led_port, OUTPUT);
+    pinMode(cells[i].yellow_led_port, OUTPUT);
+    pinMode(cells[i].red_led_port, OUTPUT);
     cells[i].servo_driver.attach(cells[i].servo_port);
     if (cells[i].lock_direction == 0) {
       cells[i].current_angle = cells[i].limit_down;
@@ -81,21 +105,22 @@ void setup() {
 }
 
 int current_cell = 0;
+int blink_delay = 100;
 
 void loop() {
   for (int i = 0; i < CELLS_COUNT; i++) {
     cells[i].servo_driver.write(cells[i].current_angle);
     if (i == current_cell) {
-      if (cells[current_cell].led_port_type == 0)
-        analogWrite(cells[current_cell].led_port, 1023);
-      if (cells[current_cell].led_port_type == 1)
-        digitalWrite(cells[current_cell].led_port, HIGH);
+      if (cells[current_cell].yellow_led_port_type == 0)
+        analogWrite(cells[current_cell].yellow_led_port, 1023);
+      if (cells[current_cell].yellow_led_port_type == 1)
+        digitalWrite(cells[current_cell].yellow_led_port, HIGH);
     }
     else {
-      if (cells[current_cell].led_port_type == 0)
-        analogWrite(cells[current_cell].led_port, 0);
-      if (cells[current_cell].led_port_type == 1)
-        digitalWrite(cells[current_cell].led_port, LOW);
+      if (cells[current_cell].yellow_led_port_type == 0)
+        analogWrite(cells[current_cell].yellow_led_port, 0);
+      if (cells[current_cell].yellow_led_port_type == 1)
+        digitalWrite(cells[current_cell].yellow_led_port, LOW);
     }
   }
   byte data = Serial.read();
@@ -129,6 +154,25 @@ void loop() {
     else {
       cells[current_cell].current_angle = min(cells[current_cell].limit_up, cells[current_cell].current_angle + angle_change);
     }
+    
+    if (cells[current_cell].green_led_port_type == 0){
+        analogWrite(cells[current_cell].green_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].green_led_port, 0);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].green_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].green_led_port, 0);
+    }
+    if (cells[current_cell].green_led_port_type == 1){
+        digitalWrite(cells[current_cell].green_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].green_led_port, LOW);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].green_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].green_led_port, LOW);
+    }
   }
   if (data == CLOSE_CELL) {
     cells[current_cell].state = 0;
@@ -137,6 +181,65 @@ void loop() {
     }
     else {
       cells[current_cell].current_angle = max(cells[current_cell].limit_down, cells[current_cell].current_angle - angle_change);
+    }
+    
+    if (cells[current_cell].green_led_port_type == 0){
+        analogWrite(cells[current_cell].green_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].green_led_port, 0);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].green_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].green_led_port, 0);
+    }
+    if (cells[current_cell].green_led_port_type == 1){
+        digitalWrite(cells[current_cell].green_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].green_led_port, LOW);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].green_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].green_led_port, LOW);
+    }
+  }
+  if (data == OPEN_CELL_NO_PERMISSION) {
+    if (cells[current_cell].red_led_port_type == 0){
+        analogWrite(cells[current_cell].red_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].red_led_port, 0);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].red_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].red_led_port, 0);
+    }
+    if (cells[current_cell].red_led_port_type == 1){
+        digitalWrite(cells[current_cell].red_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].red_led_port, LOW);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].red_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].red_led_port, LOW);
+    }
+  }
+  if (data == CLOSE_CELL_NO_PERMISSION) {
+    if (cells[current_cell].red_led_port_type == 0){
+        analogWrite(cells[current_cell].red_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].red_led_port, 0);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].red_led_port, 1023);
+        delay(blink_delay);
+        analogWrite(cells[current_cell].red_led_port, 0);
+    }
+    if (cells[current_cell].red_led_port_type == 1){
+        digitalWrite(cells[current_cell].red_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].red_led_port, LOW);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].red_led_port, HIGH);
+        delay(blink_delay);
+        digitalWrite(cells[current_cell].red_led_port, LOW);
     }
   }
 }
