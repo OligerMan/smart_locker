@@ -16,6 +16,8 @@ class Command(Enum):
     SELECT_RIGHT_DOWN = 7
     OPEN_CELL = 8
     CLOSE_CELL = 9
+    OPEN_CELL_NO_PERMISSION = 10
+    CLOSE_CELL_NO_PERMISSION = 11
 
 
 class Arduino:

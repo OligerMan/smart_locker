@@ -47,7 +47,38 @@ def faces_detection(img_queue, res_queue):
         res_queue.put(out)
 
 
+def open_cell(arduino, tags, permissions, target):
+    for tag in tags:
+        if permissions.get(tag, None) is not None:
+            if target in permissions[tag]:
+                arduino.send_command(Command.OPEN_CELL)
+                print("Cell opened")
+                return
+    arduino.send_command(Command.OPEN_CELL_NO_PERMISSION)
+    print("No permission")
+
+
+def close_cell(arduino, tags, permissions, target):
+    for tag in tags:
+        if permissions.get(tag, None) is not None:
+            if target in permissions[tag]:
+                arduino.send_command(Command.CLOSE_CELL)
+                print("Cell closed")
+                return
+    arduino.send_command(Command.CLOSE_CELL_NO_PERMISSION)
+    print("No permission")
+
+
 if __name__ == '__main__':
+    current_cell_selection = "left_up"
+    permissions = {
+        "oleg": ["left_down", "right_up", "right_down"],
+        "luca": ["left_up", "left_down", "right_up", "right_down"],
+        "maksim": ["left_up", "left_down", "right_up", "right_down"],
+        "nikita": ["left_up", "left_down", "right_up", "right_down"],
+        "vika": ["left_up", "left_down", "right_up", "right_down"]
+    }
+
     img_queue = multiprocessing.Queue()
     res_queue = multiprocessing.Queue()
 
@@ -123,10 +154,10 @@ if __name__ == '__main__':
 
 
     gesture_mapping = {
-        ("Left", "Open_Palm"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
-        ("Right", "Open_Palm"): lambda arduino: arduino.send_command(Command.OPEN_CELL),
-        ("Left", "Closed_Fist"): lambda arduino: arduino.send_command(Command.CLOSE_CELL),
-        ("Right", "Closed_Fist"): lambda arduino: arduino.send_command(Command.CLOSE_CELL)
+        ("Left", "Open_Palm"): open_cell,
+        ("Right", "Open_Palm"): open_cell,
+        ("Left", "Closed_Fist"): close_cell,
+        ("Right", "Closed_Fist"): close_cell
     }
 
     gesture_trigger_delay = 1
@@ -136,8 +167,9 @@ if __name__ == '__main__':
         arduino = Arduino()
         print("failed arduino start")
 
-    face_detection_window_size = 5
+    face_detection_window_size = 7
     prev_detection_window = [set() for i in range(face_detection_window_size)]
+    face_permission_tags = set()
 
     while True:
         cnt += 1
@@ -169,25 +201,24 @@ if __name__ == '__main__':
             hand_data[hand_info[0].category_name] = gesture_info
         if img_queue.empty():
             img_queue.put(frame)
-
         try:
             data = res_queue.get_nowait()
             prev_detection = set()
-            print(prev_detection_window)
             for detection in prev_detection_window:
                 prev_detection = prev_detection.union(detection)
-            prev_detection_window = [tag_set for i, tag_set in enumerate(prev_detection) if i != 0]
+            prev_detection_window = [tag_set for i, tag_set in enumerate(prev_detection_window) if i != 0]
             current_detection = set()
 
             for i, tag in enumerate(face_encodings_tags):
                 if data[i]:
-                    print(tag, "detected, frame", cnt)
+                    #print(tag, "detected, frame", cnt)
                     current_detection.update([tag])
 
             prev_detection_window.append(current_detection)
             current_detection = set()
             for detection in prev_detection_window:
                 current_detection = current_detection.union(detection)
+            face_permission_tags = current_detection
             if prev_detection != current_detection:
                 # print(prev_detection, current_detection)
                 for tag in list(prev_detection.difference(current_detection)):
@@ -200,15 +231,14 @@ if __name__ == '__main__':
                     )
         except Exception:
             pass
-
         if time.time() - last_trigger > gesture_trigger_delay:
             for data in hand_data["Right"]:
                 print(data)
-                gesture_mapping.get(("Right", data), stub)(arduino)
+                gesture_mapping.get(("Right", data), stub)(arduino, face_permission_tags, permissions, current_cell_selection)
                 last_trigger = time.time()
             for data in hand_data["Left"]:
                 print(data)
-                gesture_mapping.get(("Left", data), stub)(arduino)
+                gesture_mapping.get(("Left", data), stub)(arduino, face_permission_tags, permissions, current_cell_selection)
                 last_trigger = time.time()
         if len(detection_result.pose_landmarks):
             elbow = detection_result.pose_landmarks[0][14]
@@ -218,15 +248,19 @@ if __name__ == '__main__':
             if elbow.presence > 0.75 and wrist.presence > 0.75:
                 if diff_x < 0 and diff_y > 0:
                     arduino.send_command(Command.SELECT_RIGHT_UP)
+                    current_cell_selection = "right_up"
                     #print("right_up")
                 if diff_x < 0 and diff_y < 0:
                     arduino.send_command(Command.SELECT_RIGHT_DOWN)
+                    current_cell_selection = "right_down"
                     #print("right_down")
                 if diff_x > 0 and diff_y > 0:
                     arduino.send_command(Command.SELECT_LEFT_UP)
+                    current_cell_selection = "left_up"
                     #print("left_up")
                 if diff_x > 0 and diff_y < 0:
                     arduino.send_command(Command.SELECT_LEFT_DOWN)
+                    current_cell_selection = "left_down"
                     #print("left_down")
         #print(time.time() - start_point)
         annotated_image = draw_landmarks_on_image(img.numpy_view(), detection_result)
